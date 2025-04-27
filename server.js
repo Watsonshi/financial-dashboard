@@ -30,7 +30,13 @@ app.get('/api/fred', async (req, res) => {
     }
     
     // 替換 URL 中的預留 API 金鑰
-    const actualUrl = url.replace('API_KEY_PLACEHOLDER', FRED_API_KEY);
+    let actualUrl = url;
+    if (url.includes('API_KEY_PLACEHOLDER')) {
+      actualUrl = url.replace('API_KEY_PLACEHOLDER', FRED_API_KEY);
+      console.log('已替換 API 金鑰');
+    }
+    
+    console.log('發送請求到:', actualUrl);
     
     // 發送請求到 FRED API
     const response = await fetch(actualUrl);

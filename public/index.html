@@ -230,14 +230,21 @@
     async function fetchConsumerSentiment() {
         try {
             const apiKey = 'API_KEY_PLACEHOLDER'; // 將在伺服器端替換
-            const apiUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=UMCSENT&api_key=${apiKey}&file_type=json&observation_start=2025-04-01`;
+            // 使用密西根消費者信心指數 (UMCSENT)，但調整日期範圍為 2024-01-01 開始以確保有資料
+            const apiUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=UMCSENT&api_key=${apiKey}&file_type=json&observation_start=2024-01-01&sort_order=desc&limit=1`;
             const response = await fetch(`/api/fred?url=${encodeURIComponent(apiUrl)}`);
             const data = await response.json();
 
-            const latest = data.observations[data.observations.length - 1];
+            // 檢查是否有資料
+            if (!data.observations || data.observations.length === 0) {
+                throw new Error('沒有找到密西根消費者信心指數資料');
+            }
+
+            // 取得最新一筆資料
+            const latest = data.observations[0]; // 因為我們使用 desc 排序，所以第一筆就是最新的
             document.getElementById('consumerSentiment').textContent = parseFloat(latest.value).toFixed(1);
         } catch (error) {
-            console.error('Consumer Sentiment fetch error:', error);
+            console.error('密西根消費者信心指數載入錯誤:', error);
             document.getElementById('consumerSentiment').textContent = 'Error';
         }
     }

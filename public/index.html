@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>金融市場追蹤儀表板</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            font-family: 'Noto Sans TC', sans-serif;
+            color: white;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #E31937;
+            margin: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.5s ease;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+        }
+        .big-number {
+            font-size: 3rem;
+            color: #E31937;
+            font-weight: bold;
+        }
+        .small-english {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h1>金融市場追蹤儀表板 Financial Dashboard</h1>
+
+<div class="grid">
+    <div class="card">
+        <div class="big-number" id="dxyValue">--</div>
+        <div class="small-english">DXY Index</div>
+    </div>
+    <div class="card">
+        <div class="big-number" id="vixValue">--</div>
+        <div class="small-english">VIX Fear Index</div>
+    </div>
+    <div class="card">
+        <div class="big-number" id="consumerSentiment">--</div>
+        <div class="small-english">Consumer Sentiment (UMich)</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>美國公債殖利率曲線 US Treasury Yield Curve</h2>
+    <canvas id="yieldChart" width="800" height="400"></canvas>
+</div>
+
+<script>
+    async function fetchYield() {
+        try {
+            const apiKey = 'API_KEY_PLACEHOLDER'; // 將在伺服器端替換
+            
+            // 取得 10 年期公債殖利率資料
+            const apiUrl10Y = `https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=${apiKey}&file_type=json&observation_start=2025-04-01`;
+            const response10Y = await fetch(`/api/fred?url=${encodeURIComponent(apiUrl10Y)}`);
+            const data10Y = await response10Y.json();
+            
+            // 取得 2 年期公債殖利率資料
+            const apiUrl2Y = `https://api.stlouisfed.org/fred/series/observations?series_id=DGS2&api_key=${apiKey}&file_type=json&observation_start=2025-04-01`;
+            const response2Y = await fetch(`/api/fred?url=${encodeURIComponent(apiUrl2Y)}`);
+            const data2Y = await response2Y.json();
+
+            // 檢查是否有資料
+            if (!data10Y.observations || data10Y.observations.length === 0 || !data2Y.observations || data2Y.observations.length === 0) {
+                console.error('沒有找到殖利率資料');
+                document.getElementById('yieldChart').innerHTML = '<div style="color:white;text-align:center;padding:20px;">沒有可用的殖利率資料</div>';
+                return;
+            }
+
+            console.log('10年期殖利率資料點數量:', data10Y.observations.length);
+            console.log('2年期殖利率資料點數量:', data2Y.observations.length);
+            
+            // 手動處理 4/18 的空值問題
+            const processedData10Y = data10Y.observations.filter(obs => obs.date !== '2025-04-18');
+            const processedData2Y = data2Y.observations.filter(obs => obs.date !== '2025-04-18');
+            
+            // 將兩種殖利率資料合併並按日期排序
+            const allDates = [...new Set([...processedData10Y.map(d => d.date), ...processedData2Y.map(d => d.date)])].sort();
+            
+            // 建立日期對應表
+            const dateMap10Y = {};
+            const dateMap2Y = {};
+            
+            processedData10Y.forEach(item => {
+                dateMap10Y[item.date] = parseFloat(item.value);
+            });
+            
+            processedData2Y.forEach(item => {
+                dateMap2Y[item.date] = parseFloat(item.value);
+            });
+            
+            // 格式化日期並準備數據
+            const dates = allDates.map(dateStr => {
+                const date = new Date(dateStr);
+                return `${date.getMonth() + 1}/${date.getDate()}`;
+            });
+            
+            const values10Y = allDates.map(date => dateMap10Y[date] || null);
+            const values2Y = allDates.map(date => dateMap2Y[date] || null);
+
+            // 檢查是否有足夠的資料點
+            if (dates.length === 0) {
+                console.error('沒有足夠的資料點來繪製圖表');
+                document.getElementById('yieldChart').innerHTML = '<div style="color:white;text-align:center;padding:20px;">沒有足夠的資料點來繪製圖表</div>';
+                return;
+            }
+
+            const ctx = document.getElementById('yieldChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: '10年期殖利率 (%)',
+                            data: values10Y,
+                            borderColor: '#E31937',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: '2年期殖利率 (%)',
+                            data: values2Y,
+                            borderColor: '#4B9CD3',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: {
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            suggestedMin: 4.0,  // 設定 Y 軸最小值
+                            suggestedMax: 4.5   // 設定 Y 軸最大值
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('繪製殖利率圖表時發生錯誤:', error);
+            document.getElementById('yieldChart').innerHTML = `<div style="color:white;text-align:center;padding:20px;">載入資料時發生錯誤: ${error.message}</div>`;
+        }
+    }
+
+    async function fetchDXY() {
+        try {
+            // 使用 FRED API 的 DTWEXBGS 作為美元指數替代
+            const apiKey = 'API_KEY_PLACEHOLDER'; // 將在伺服器端替換
+            const apiUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=DTWEXBGS&api_key=${apiKey}&file_type=json&observation_start=2025-04-01`;
+            const response = await fetch(`/api/fred?url=${encodeURIComponent(apiUrl)}`);
+            const data = await response.json();
+            
+            // 取最新值
+            const observations = data.observations;
+            const latest = observations[observations.length - 1];
+
+            document.getElementById('dxyValue').textContent = parseFloat(latest.value).toFixed(2);
+        } catch (error) {
+            console.error('DXY fetch error:', error);
+            document.getElementById('dxyValue').textContent = 'Error';
+        }
+    }
+
+    async function fetchVIX() {
+        try {
+            // 使用 FRED API 的 VIXCLS 作為 VIX 指數
+            const apiKey = 'API_KEY_PLACEHOLDER'; // 將在伺服器端替換
+            const apiUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS&api_key=${apiKey}&file_type=json&observation_start=2025-04-01`;
+            const response = await fetch(`/api/fred?url=${encodeURIComponent(apiUrl)}`);
+            const data = await response.json();
+            
+            // 取最新值
+            const observations = data.observations;
+            const latest = observations[observations.length - 1];
+            document.getElementById('vixValue').textContent = parseFloat(latest.value).toFixed(2);
+        } catch (error) {
+            console.error('VIX fetch error:', error);
+            document.getElementById('vixValue').textContent = 'Error';
+        }
+    }
+
+    async function fetchConsumerSentiment() {
+        try {
+            const apiKey = 'API_KEY_PLACEHOLDER'; // 將在伺服器端替換
+            const apiUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=UMCSENT&api_key=${apiKey}&file_type=json&observation_start=2025-04-01`;
+            const response = await fetch(`/api/fred?url=${encodeURIComponent(apiUrl)}`);
+            const data = await response.json();
+
+            const latest = data.observations[data.observations.length - 1];
+            document.getElementById('consumerSentiment').textContent = parseFloat(latest.value).toFixed(1);
+        } catch (error) {
+            console.error('Consumer Sentiment fetch error:', error);
+            document.getElementById('consumerSentiment').textContent = 'Error';
+        }
+    }
+
+    // 一起啟動
+    window.onload = function() {
+        fetchYield();
+        fetchDXY();
+        fetchVIX();
+        fetchConsumerSentiment();
+    };
+
+    // 滾動動畫
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray(".card").forEach(card => {
+        gsap.from(card, {
+            opacity: 0,
+            y: 50,
+            duration: 1,
+            clearProps: "all", // 確保動畫結束後清除屬性，不影響 hover 效果
+            scrollTrigger: {
+                trigger: card,
+                start: "top 80%",
+                end: "top 50%",
+                toggleActions: "play none none none"
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

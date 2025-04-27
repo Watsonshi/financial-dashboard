@@ -1,0 +1,26 @@
+# 環境變數
+.env
+
+# 依賴包
+node_modules/
+
+# 日誌
+logs
+*.log
+npm-debug.log*
+
+# 運行時資料
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 目錄
+.npm
+.eslintcache
+.node_repl_history
+.vscode/
+
+# 系統檔案
+.DS_Store
+Thumbs.db

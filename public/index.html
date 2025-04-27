@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>金融市場追蹤儀表板</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -12,24 +13,28 @@
             font-family: 'Noto Sans TC', sans-serif;
             color: white;
             overflow-x: hidden;
+            padding: 0 10px;
         }
         h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: #E31937;
-            margin: 20px;
+            margin: 20px 10px;
+            text-align: center;
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            padding: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            padding: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         .card {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
             backdrop-filter: blur(10px);
             transition: transform 0.5s ease;
@@ -38,17 +43,51 @@
             transform: translateY(-10px);
         }
         .big-number {
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: #E31937;
             font-weight: bold;
         }
         .small-english {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.6);
             margin-top: 5px;
         }
         canvas {
             margin-top: 20px;
+            width: 100% !important;
+            height: auto !important;
+            max-height: 400px;
+        }
+        
+        /* 響應式設計媒體查詢 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 8px;
+            }
+            .card {
+                padding: 12px;
+            }
+            .big-number {
+                font-size: 2.2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+                margin: 15px 5px;
+            }
+            .big-number {
+                font-size: 2rem;
+            }
+            .small-english {
+                font-size: 0.8rem;
+            }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

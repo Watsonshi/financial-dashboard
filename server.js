@@ -1,7 +1,12 @@
-const express = require('express');
-const fetch = require('node-fetch');
-const path = require('path');
-const dotenv = require('dotenv');
+import express from 'express';
+import fetch from 'node-fetch';
+import path from 'path';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+// __dirname 在 ES 模組中不可用，需要手動定義
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 載入環境變數
 dotenv.config();

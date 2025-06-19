@@ -2,6 +2,7 @@
   "name": "financial-dashboard",
   "version": "1.0.0",
   "description": "金融市場追蹤儀表板",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -18,7 +19,7 @@
   "dependencies": {
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
